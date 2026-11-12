@@ -1,0 +1,19 @@
+{
+  "name": "Kell Lighting Planner",
+  "short_name": "Kell Lighting",
+  "description": "Plan lighting layouts on a photo of your ceiling or wall. By Kell Electricals Limited.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f4f5f7",
+  "theme_color": "#0a6ebd",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

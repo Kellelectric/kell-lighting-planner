@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+  <title>Kell Lighting Planner</title>
+  <meta name="description" content="Plan lighting layouts on a photo of your ceiling or wall. Draw strip lights, cove lights and spotlights. By Kell Electricals Limited.">
+  <meta name="theme-color" content="#0a6ebd">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Kell Lighting">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f4f5f7;
+      --surface: #ffffff;
+      --text: #1a1d21;
+      --muted: #5c6570;
+      --line: #d0d5dd;
+      --accent: #0a6ebd;
+      --on-accent: #ffffff;
+      --stage: #e8eaed;
+      --danger: #c0392b;
+      box-sizing: border-box;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #121416;
+        --surface: #1e2228;
+        --text: #f0f2f5;
+        --muted: #9aa3ad;
+        --line: #3a4149;
+        --stage: #0d0f12;
+        --accent: #3b9aef;
+        --on-accent: #0a121a;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #121416;
+      --surface: #1e2228;
+      --text: #f0f2f5;
+      --muted: #9aa3ad;
+      --line: #3a4149;
+      --stage: #0d0f12;
+      --accent: #3b9aef;
+      --on-accent: #0a121a;
+    }
+    *, *::before, *::after { box-sizing: inherit; }
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: none;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      padding-top: env(safe-area-inset-top, 0);
+      padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+    header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
+      flex-shrink: 0;
+      z-index: 10;
+    }
+    header h1 {
+      font-size: 16px;
+      font-weight: 700;
+      margin: 0;
+      flex: 1;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    header h1 small {
+      font-weight: 500;
+      font-size: 11px;
+      color: var(--muted);
+      margin-left: 4px;
+    }
+    .btn {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      font: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 7px 12px;
+      border-radius: 999px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn.primary {
+      background: var(--accent);
+      color: var(--on-accent);
+      border-color: transparent;
+    }
+    #stage-wrap {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background: var(--stage);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #canvas {
+      display: block;
+      max-width: 100%;
+      max-height: 100%;
+      touch-action: none;
+      cursor: crosshair;
+    }
+    #empty {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
+      pointer-events: none;
+    }
+    #empty h2 {
+      margin: 0 0 8px;
+      font-size: 20px;
+      font-weight: 700;
+    }
+    #empty p {
+      margin: 0 0 20px;
+      color: var(--muted);
+      font-size: 14px;
+      max-width: 280px;
+      line-height: 1.4;
+    }
+    #empty .btn {
+      pointer-events: auto;
+      padding: 12px 22px;
+      font-size: 15px;
+    }
+    #count {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0,0,0,0.55);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 999px;
+      z-index: 5;
+      display: none;
+    }
+    #fit-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 5;
+      display: none;
+    }
+    #toolbar {
+      background: var(--surface);
+      border-top: 1px solid var(--line);
+      flex-shrink: 0;
+      padding: 8px 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    #palette {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    #palette button {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      padding: 0;
+      cursor: pointer;
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.15);
+    }
+    #palette button.selected {
+      border-color: var(--text);
+      box-shadow: 0 0 0 2px var(--accent);
+    }
+    #size-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 4px;
+    }
+    #size-row label {
+      font-size: 12px;
+      color: var(--muted);
+      min-width: 32px;
+    }
+    #size-row input[type="range"] {
+      flex: 1;
+      accent-color: var(--accent);
+    }
+    #size-val {
+      font-size: 12px;
+      font-weight: 600;
+      min-width: 20px;
+      text-align: right;
+    }
+    #tools {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+    }
+    #tools button {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      font: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 10px 4px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      min-height: 48px;
+    }
+    #tools button .swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 1px solid rgba(0,0,0,0.2);
+    }
+    #tools button.active {
+      background: var(--accent);
+      color: var(--on-accent);
+      border-color: transparent;
+    }
+    #tools button.active .swatch {
+      border-color: rgba(255,255,255,0.5);
+    }
+    #spot-opts {
+      display: none;
+      justify-content: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    #spot-opts.visible { display: flex; }
+    #spot-opts button {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+    #spot-opts button.active {
+      background: var(--accent);
+      color: var(--on-accent);
+      border-color: transparent;
+    }
+    #hint {
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      padding: 2px 8px 0;
+      min-height: 18px;
+    }
+    #modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 16px;
+    }
+    #modal.open { display: flex; }
+    #modal .card {
+      background: var(--surface);
+      border-radius: 16px;
+      padding: 16px;
+      max-width: 420px;
+      width: 100%;
+      max-height: 90vh;
+      overflow: auto;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+    }
+    #modal img {
+      width: 100%;
+      border-radius: 8px;
+      display: block;
+      margin-bottom: 12px;
+    }
+    #modal .actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Kell Lighting Planner <small>by Kell Electricals</small></h1>
+    <button type="button" class="btn" id="photo-btn">Photo</button>
+    <button type="button" class="btn primary" id="save-btn">Save</button>
+  </header>
+
+  <div id="stage-wrap">
+    <canvas id="canvas" width="800" height="500"></canvas>
+    <div id="count">Strip <b id="c-strip">0</b> · Spot <b id="c-spot">0</b></div>
+    <button type="button" class="btn" id="fit-btn">Fit</button>
+    <div id="empty">
+      <h2>Plan lighting on a photo</h2>
+      <p>Take or choose a photo of the ceiling or wall, then draw your lights on it.</p>
+      <button type="button" class="btn primary" id="photo-btn-2">Choose or take a photo</button>
+    </div>
+  </div>
+
+  <div id="hint"></div>
+
+  <div id="toolbar">
+    <div id="palette"></div>
+    <div id="size-row">
+      <label for="size">Size</label>
+      <input type="range" id="size" min="1" max="12" value="3" step="1">
+      <span id="size-val">3</span>
+    </div>
+    <div id="spot-opts">
+      <button type="button" data-ty="single" class="active">Single</button>
+      <button type="button" data-ty="double">Double</button>
+      <button type="button" data-sh="round" class="active">Round</button>
+      <button type="button" data-sh="square">Square</button>
+    </div>
+    <div id="tools">
+      <button type="button" data-tool="strip" class="active"><span class="swatch" style="background:#ffffff"></span>Strip</button>
+      <button type="button" data-tool="cove"><span class="swatch" style="background:#f5b82e"></span>Cove</button>
+      <button type="button" data-tool="spot">Spot</button>
+      <button type="button" data-tool="erase">Eraser</button>
+      <button type="button" data-tool="edit">Edit</button>
+      <button type="button" data-tool="move">Move</button>
+      <button type="button" data-tool="glow">Glow</button>
+      <button type="button" data-tool="ruler">Ruler</button>
+      <button type="button" data-tool="undo">Undo</button>
+      <button type="button" data-tool="clear">Clear</button>
+    </div>
+  </div>
+
+  <div id="modal">
+    <div class="card">
+      <img id="preview" alt="Lighting plan preview">
+      <div class="actions">
+        <button type="button" class="btn" id="close-modal">Close</button>
+        <a id="download-link" class="btn primary" download="kell-lighting-plan.jpg">Download</a>
+      </div>
+    </div>
+  </div>
+
+  <input type="file" id="file-input" accept="image/*" capture="environment" hidden>
+
+  <script src="app.js"></script>
+</body>
+</html>
